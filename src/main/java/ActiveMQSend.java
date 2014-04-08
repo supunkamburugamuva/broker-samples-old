@@ -12,14 +12,27 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.TextMessage;
+import java.io.FileReader;
+import java.io.IOException;
 
 /**
  * Hello world!
  */
 public class ActiveMQSend {
-
     public static void main(String[] args) throws Exception {
-        thread(new HelloWorldProducer(), false);
+        if (args.length == 1) {
+            String fileName = args[0];
+            String content = readEntireFile(fileName);
+            thread(new HelloWorldProducer(content), false);
+        } else if (args.length == 2) {
+            String fileName = args[0];
+            String content = readEntireFile(fileName);
+            thread(new HelloWorldProducer(content, Integer.parseInt(args[1])), false);
+        } else {
+            thread(new HelloWorldProducer("Hello world"), false);
+        }
+
+
     }
 
     public static void thread(Runnable runnable, boolean daemon) {
@@ -29,6 +42,19 @@ public class ActiveMQSend {
     }
 
     public static class HelloWorldProducer implements Runnable {
+        String content;
+
+        long time = 100;
+
+        public HelloWorldProducer(String content) {
+            this.content = content;
+        }
+
+        public HelloWorldProducer(String content, long time) {
+            this.content = content;
+            this.time = time;
+        }
+
         public void run() {
             try {
                 // Create a ConnectionFactory
@@ -51,14 +77,13 @@ public class ActiveMQSend {
                 boolean run = true;
                 while (run) {
                 // Create a messages
-                    String text = "Hello world! From: " + Thread.currentThread().getName() + " : " + this.hashCode();
-                    TextMessage message = session.createTextMessage(text);
+                    TextMessage message = session.createTextMessage(content);
                     message.setLongProperty("time", System.currentTimeMillis());
 
                     // Tell the producer to send the message
                     System.out.println("Sent message: " + message.hashCode() + " : " + Thread.currentThread().getName());
                     producer.send(message);
-                    Thread.sleep(100);
+                    Thread.sleep(time);
                 }
                 // Clean up
                 session.close();
@@ -115,5 +140,17 @@ public class ActiveMQSend {
         public synchronized void onException(JMSException ex) {
             System.out.println("JMS Exception occured.  Shutting down client.");
         }
+    }
+
+    private static String readEntireFile(String filename) throws IOException {
+        FileReader in = new FileReader(filename);
+        StringBuilder contents = new StringBuilder();
+        char[] buffer = new char[4096];
+        int read = 0;
+        do {
+            contents.append(buffer, 0, read);
+            read = in.read(buffer);
+        } while (read >= 0);
+        return contents.toString();
     }
 }
