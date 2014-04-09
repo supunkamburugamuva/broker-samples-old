@@ -23,16 +23,24 @@ public class ActiveMQSend {
         if (args.length == 1) {
             String fileName = args[0];
             String content = readEntireFile(fileName);
-            thread(new HelloWorldProducer(content), false);
+            thread(new HelloWorldProducer(args[0], "Hello World", 10, "1"), false);
         } else if (args.length == 2) {
-            String fileName = args[0];
+            String fileName = args[1];
             String content = readEntireFile(fileName);
-            thread(new HelloWorldProducer(content, Integer.parseInt(args[1])), false);
-        } else {
-            thread(new HelloWorldProducer("Hello world"), false);
+            thread(new HelloWorldProducer(args[0], content, 10, "1"), false);
+        } else if (args.length == 3) {
+            String fileName = args[1];
+            String content = readEntireFile(fileName);
+            int time = Integer.parseInt(args[2]);
+            thread(new HelloWorldProducer(args[0], content, time, "1"), false);
+        } else if (args.length == 4) {
+            String fileName = args[1];
+            String content = readEntireFile(fileName);
+            int time = Integer.parseInt(args[2]);
+            for (int i = 0; i < Integer.parseInt(args[3]); i++) {
+                thread(new HelloWorldProducer(args[0], content, time, "" + i), false);
+            }
         }
-
-
     }
 
     public static void thread(Runnable runnable, boolean daemon) {
@@ -42,23 +50,27 @@ public class ActiveMQSend {
     }
 
     public static class HelloWorldProducer implements Runnable {
+        String url = "tcp://localhost:61616";
+
         String content;
 
         long time = 100;
 
-        public HelloWorldProducer(String content) {
-            this.content = content;
-        }
+        String id = "1";
 
-        public HelloWorldProducer(String content, long time) {
+        public HelloWorldProducer(String url, String content, long time, String id) {
             this.content = content;
             this.time = time;
+            this.id = id;
+            this.url = url;
         }
 
         public void run() {
             try {
                 // Create a ConnectionFactory
-                ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://10.39.1.55:61616");
+                ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(url);
+                connectionFactory.setAlwaysSessionAsync(false);
+                connectionFactory.setOptimizeAcknowledge(true);
 
                 // Create a Connection
                 Connection connection = connectionFactory.createConnection();
@@ -68,7 +80,7 @@ public class ActiveMQSend {
                 Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
                 // Create the destination (Topic or Queue)
-                Destination destination = session.createQueue("send");
+                Destination destination = session.createQueue("send" + id);
 
                 // Create a MessageProducer from the Session to the Topic or Queue
                 MessageProducer producer = session.createProducer(destination);
