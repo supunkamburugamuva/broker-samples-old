@@ -71,7 +71,7 @@ public class ActiveMQSend {
             this.time = time;
             this.id = id;
             this.url = url;
-            this.reset = true;
+            this.reset = reset;
         }
 
         public void run() {
