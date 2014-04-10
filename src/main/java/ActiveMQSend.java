@@ -27,18 +27,25 @@ public class ActiveMQSend {
         } else if (args.length == 2) {
             String fileName = args[1];
             String content = readEntireFile(fileName);
-            thread(new HelloWorldProducer(args[0], content, 10, "1"), false);
+            thread(new HelloWorldProducer(args[0], content, 10, "1", false), false);
         } else if (args.length == 3) {
             String fileName = args[1];
             String content = readEntireFile(fileName);
             int time = Integer.parseInt(args[2]);
-            thread(new HelloWorldProducer(args[0], content, time, "1"), false);
+            thread(new HelloWorldProducer(args[0], content, time, "1", false), false);
         } else if (args.length == 4) {
             String fileName = args[1];
             String content = readEntireFile(fileName);
             int time = Integer.parseInt(args[2]);
             for (int i = 0; i < Integer.parseInt(args[3]); i++) {
-                thread(new HelloWorldProducer(args[0], content, time, "" + i), false);
+                thread(new HelloWorldProducer(args[0], content, time, "" + i, false), false);
+            }
+        } else if (args.length == 5) {
+            String fileName = args[1];
+            String content = readEntireFile(fileName);
+            int time = Integer.parseInt(args[2]);
+            for (int i = 0; i < Integer.parseInt(args[3]); i++) {
+                thread(new HelloWorldProducer(args[0], content, time, "" + i, true), false);
             }
         }
     }
@@ -50,6 +57,7 @@ public class ActiveMQSend {
     }
 
     public static class HelloWorldProducer implements Runnable {
+        private final boolean reset;
         String url = "tcp://localhost:61616";
 
         String content;
@@ -58,11 +66,12 @@ public class ActiveMQSend {
 
         String id = "1";
 
-        public HelloWorldProducer(String url, String content, long time, String id) {
+        public HelloWorldProducer(String url, String content, long time, String id, boolean reset) {
             this.content = content;
             this.time = time;
             this.id = id;
             this.url = url;
+            this.reset = true;
         }
 
         public void run() {
@@ -100,7 +109,11 @@ public class ActiveMQSend {
                     count++;
                 // Create a messages
                     TextMessage message = session.createTextMessage(content);
-                    message.setLongProperty("time", System.currentTimeMillis());
+                    if (!reset) {
+                        message.setLongProperty("time", System.currentTimeMillis());
+                    } else {
+                        message.setLongProperty("time", System.currentTimeMillis() * 2);
+                    }
 
                     // Tell the producer to send the message
                     System.out.println("Sent message: " + message.hashCode() + " : " + Thread.currentThread().getName());
