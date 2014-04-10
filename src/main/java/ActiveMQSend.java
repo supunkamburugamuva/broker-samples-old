@@ -87,7 +87,15 @@ public class ActiveMQSend {
                 producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
 
                 boolean run = true;
+                int count = 0;
+                long start = 0;
                 while (run) {
+                    if (System.currentTimeMillis() - start > 10000) {
+                        start = System.currentTimeMillis();
+                        System.out.println("Through put **********:" + ((double)count) * 1000 /((double)System.currentTimeMillis() - start));
+                        count = 0;
+                    }
+                    count++;
                 // Create a messages
                     TextMessage message = session.createTextMessage(content);
                     message.setLongProperty("time", System.currentTimeMillis());
