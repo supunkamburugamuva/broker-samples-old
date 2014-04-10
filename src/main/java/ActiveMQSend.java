@@ -42,7 +42,7 @@ public class ActiveMQSend {
             String content = readEntireFile(fileName);
             int time = Integer.parseInt(args[2]);
             for (int i = 0; i < Integer.parseInt(args[3]); i++) {
-                HelloWorldProducer producer = new HelloWorldProducer(args[0], content, time, "" + i, true);
+                HelloWorldProducer producer = new HelloWorldProducer(args[0], content, time, "" + i, false);
                 producerList.add(producer);
                 thread(producer, false);
             }
