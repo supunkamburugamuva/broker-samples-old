@@ -23,7 +23,7 @@ public class ActiveMQSend {
         if (args.length == 1) {
             String fileName = args[0];
             String content = readEntireFile(fileName);
-            thread(new HelloWorldProducer(args[0], "Hello World", 10, "1"), false);
+            thread(new HelloWorldProducer(args[0], "Hello World", 10, "1", false), false);
         } else if (args.length == 2) {
             String fileName = args[1];
             String content = readEntireFile(fileName);
