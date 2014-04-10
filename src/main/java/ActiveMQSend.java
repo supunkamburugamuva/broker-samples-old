@@ -14,11 +14,15 @@ import javax.jms.Session;
 import javax.jms.TextMessage;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Hello world!
  */
 public class ActiveMQSend {
+    private static List<HelloWorldProducer> producerList = new ArrayList<HelloWorldProducer>();
+
     public static void main(String[] args) throws Exception {
         if (args.length == 1) {
             String fileName = args[0];
@@ -38,16 +42,28 @@ public class ActiveMQSend {
             String content = readEntireFile(fileName);
             int time = Integer.parseInt(args[2]);
             for (int i = 0; i < Integer.parseInt(args[3]); i++) {
-                thread(new HelloWorldProducer(args[0], content, time, "" + i, false), false);
+                HelloWorldProducer producer = new HelloWorldProducer(args[0], content, time, "" + i, true);
+                producerList.add(producer);
+                thread(producer, false);
             }
         } else if (args.length == 5) {
             String fileName = args[1];
             String content = readEntireFile(fileName);
             int time = Integer.parseInt(args[2]);
             for (int i = 0; i < Integer.parseInt(args[3]); i++) {
-                thread(new HelloWorldProducer(args[0], content, time, "" + i, true), false);
+                HelloWorldProducer producer = new HelloWorldProducer(args[0], content, time, "" + i, true);
+                producerList.add(producer);
+                thread(producer, false);
             }
         }
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                for (HelloWorldProducer producer : producerList) {
+                    producer.stop();
+                }
+            }
+        });
     }
 
     public static void thread(Runnable runnable, boolean daemon) {
@@ -66,12 +82,18 @@ public class ActiveMQSend {
 
         String id = "1";
 
+        boolean run = true;
+
         public HelloWorldProducer(String url, String content, long time, String id, boolean reset) {
             this.content = content;
             this.time = time;
             this.id = id;
             this.url = url;
             this.reset = reset;
+        }
+
+        public void stop() {
+            run = false;
         }
 
         public void run() {
@@ -95,7 +117,7 @@ public class ActiveMQSend {
                 MessageProducer producer = session.createProducer(destination);
                 producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
 
-                boolean run = true;
+
                 int count = 0;
                 long start = 0;
                 while (run) {
