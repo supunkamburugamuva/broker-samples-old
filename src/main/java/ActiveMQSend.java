@@ -92,7 +92,8 @@ public class ActiveMQSend {
                 while (run) {
                     if (System.currentTimeMillis() - start > 10000) {
                         start = System.currentTimeMillis();
-                        System.out.println("Through put **********:" + (((double)count) * 1000) /(System.currentTimeMillis() - start));
+                        System.out.println();
+                        System.out.println("Through put **********:" + (((double)count) * 1000) /(System.currentTimeMillis() - start) + " count: " + count + " time:" + (System.currentTimeMillis() - start));
                         count = 0;
                     }
                     count++;
