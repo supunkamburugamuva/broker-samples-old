@@ -3,112 +3,70 @@ import com.rabbitmq.client.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class RabbitMQSend {
-    private Channel channel;
-
-    private Connection conn;
-
-    private String exchangeName = "test";
-
-    private String routingKey = "test";
-
-    private String queueName = "send";
-
-    private Address[]addresses;
-
-    private String url = "amqp://localhost:5672";
-
-    private ExecutorService executorService;
-
-    private byte[]input;
-
-    private long time;
-
+public class RabbitMQSend extends AbstractSender {
     public static void main(String[] args) throws IOException {
-        if (args.length == 1) {
-            String fileName = args[0];
-            byte []content = readFile(fileName);
-            RabbitMQSend rabbitMQSend = new RabbitMQSend(content);
-            rabbitMQSend.start();
-        } else if (args.length == 2) {
-            String fileName = args[0];
-            byte []content = readFile(fileName);
-            RabbitMQSend rabbitMQSend = new RabbitMQSend(content, Integer.parseInt(args[1]));
-            rabbitMQSend.start();
-        } else {
-            RabbitMQSend rabbitMQSend = new RabbitMQSend("hello world".getBytes());
-            rabbitMQSend.start();
-        }
-    }
+        RabbitMQSend rabbitMQSend = new RabbitMQSend();
+        rabbitMQSend.setUp(args);
 
-    public RabbitMQSend(byte[] input) {
-        this(input, 1);
-    }
-
-    public RabbitMQSend(byte[] input, long time) {
-        this.input = input;
-        this.time = time;
-        executorService = Executors.newScheduledThreadPool(10);
+        rabbitMQSend.start();
     }
 
     public void start() {
-        ConnectionFactory factory = new ConnectionFactory();
-        try {
-            if (addresses == null) {
-                factory.setUri(url);
-                if (executorService != null) {
-                    conn = factory.newConnection(executorService);
-                } else {
-                    conn = factory.newConnection();
-                }
-            } else {
-                if (executorService != null) {
-                    conn = factory.newConnection(executorService, addresses);
-                } else {
-                    conn = factory.newConnection(addresses);
-                }
-            }
 
-            channel = conn.createChannel();
-            channel.exchangeDeclare(exchangeName, "direct", true);
-            channel.queueDeclare(this.queueName, false, false, false, null).getQueue();
-            channel.queueBind(queueName, exchangeName, routingKey);
-
-            Thread t = new Thread(new Worker());
-            t.start();
-        } catch (IOException e) {
-            String msg = "Error creating the RabbitMQ channel";
-            throw new RuntimeException(msg, e);
-        } catch (Exception e) {
-            String msg = "Error creating the RabbitMQ channel";
-            throw new RuntimeException(msg, e);
-        }
-    }
-
-    public void stop() {
-        try {
-            channel.close();
-            conn.close();
-        } catch (IOException e) {
-            System.out.println("Error closing the rabbit MQ connection" + e);
-        }
     }
 
     private class Worker implements Runnable {
+        private String exchangeName = "test";
+
+        private String routingKey = "test";
+
+        private String queueName = "send";
+
+        private Channel channel;
+
+        private Connection conn;
+
+        boolean run = true;
+
+        public Worker(String queueName) {
+            ConnectionFactory factory = new ConnectionFactory();
+            try {
+                factory.setUri(url);
+                conn = factory.newConnection();
+
+                channel = conn.createChannel();
+                channel.exchangeDeclare(exchangeName, "direct", false);
+                channel.queueDeclare(this.queueName, false, false, false, null).getQueue();
+                channel.queueBind(queueName, exchangeName, routingKey);
+            } catch (IOException e) {
+                String msg = "Error creating the RabbitMQ channel";
+                throw new RuntimeException(msg, e);
+            } catch (Exception e) {
+                String msg = "Error creating the RabbitMQ channel";
+                throw new RuntimeException(msg, e);
+            }
+        }
+
         @Override
         public void run() {
-            boolean run = true;
+            
             int errorCount = 0;
             while (run) {
                 try {
+                    Map<String, Object> headers = new HashMap<String, Object>();
+                    headers.put("time", System.currentTimeMillis());
                     channel.basicPublish(exchangeName, routingKey,
-                            new AMQP.BasicProperties.Builder().timestamp(new Date(System.currentTimeMillis())).build(),
-                            input);
-                    Thread.sleep(time);
+                            new AMQP.BasicProperties.Builder().headers(headers).build(),
+                            Long.toString(System.currentTimeMillis()).getBytes());
+
+                    Thread.sleep(interval);
                 } catch (Throwable t) {
                     errorCount++;
                     if (errorCount <= 3) {
@@ -123,27 +81,15 @@ public class RabbitMQSend {
             System.out.println(message);
             throw new RuntimeException(message);
         }
-    }
 
-    public static byte[] readFile(String file) throws IOException {
-        return readFile(new File(file));
-    }
-
-    public static byte[] readFile(File file) throws IOException {
-        // Open file
-        RandomAccessFile f = new RandomAccessFile(file, "r");
-        try {
-            // Get and check length
-            long longlength = f.length();
-            int length = (int) longlength;
-            if (length != longlength)
-                throw new IOException("File size >= 2 GB");
-            // Read file and return data
-            byte[] data = new byte[length];
-            f.readFully(data);
-            return data;
-        } finally {
-            f.close();
+        public void stop() {
+            try {
+                run = false;
+                channel.close();
+                conn.close();
+            } catch (IOException e) {
+                System.out.println("Error closing the rabbit MQ connection" + e);
+            }
         }
     }
 }
