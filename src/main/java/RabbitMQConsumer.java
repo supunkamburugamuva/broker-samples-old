@@ -1,10 +1,7 @@
 import com.rabbitmq.client.*;
-import com.sun.jndi.url.corbaname.corbanameURLContextFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,12 +31,12 @@ public class RabbitMQConsumer {
         if (args.length == 1) {
             String fileName = args[0];
             byte []content = readFile(fileName);
-            RabbitMQSend rabbitMQSend = new RabbitMQSend(content);
+            RabbitMQConsumer rabbitMQSend = new RabbitMQConsumer(content);
             rabbitMQSend.start();
         } else if (args.length == 2) {
             String fileName = args[0];
             byte []content = readFile(fileName);
-            RabbitMQSend rabbitMQSend = new RabbitMQSend(content, Integer.parseInt(args[1]));
+            RabbitMQConsumer rabbitMQSend = new RabbitMQConsumer(content, Integer.parseInt(args[1]));
             rabbitMQSend.start();
         } else {
             RabbitMQConsumer rabbitMQSend = new RabbitMQConsumer("hello world".getBytes());
@@ -87,17 +84,12 @@ public class RabbitMQConsumer {
                 {
                     String routingKey = envelope.getRoutingKey();
                     Map<String, Object> headers = properties.getHeaders();
-                    // long timestamp = properties.getTimestamp().getTime();
-                    //long deliveryTag = envelope.getDeliveryTag();
                     Long timeStamp = (Long) headers.get("time");
                     String time = new String(body);
 
                     long currentTime = System.currentTimeMillis();
 
-                    // (process the message components here ...)
-//                    System.out.println("latency: " + (currentTime - Long.parseLong(time)) + " initial time: " + time + " current: " + currentTime);
                     System.out.println("latency: " + (currentTime - timeStamp) + " initial time: " + timeStamp + " current: " + currentTime);
-                    // channel.basicAck(deliveryTag, false);
                 }
             });
 

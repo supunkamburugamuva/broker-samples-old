@@ -1,25 +1,22 @@
 import com.rabbitmq.client.*;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
 
 public class RabbitMQSend extends AbstractSender {
     public static void main(String[] args) throws IOException {
         RabbitMQSend rabbitMQSend = new RabbitMQSend();
         rabbitMQSend.setUp(args);
 
-        rabbitMQSend.start();
+        rabbitMQSend.setUp(args);
     }
 
-    public void start() {
-
+    public void start(String id) {
+        Worker worker = new Worker(id);
+        Thread t = new Thread(worker);
+        t.start();
     }
 
     private class Worker implements Runnable {
@@ -56,7 +53,6 @@ public class RabbitMQSend extends AbstractSender {
 
         @Override
         public void run() {
-            
             int errorCount = 0;
             while (run) {
                 try {

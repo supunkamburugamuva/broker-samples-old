@@ -12,6 +12,8 @@ public abstract class AbstractSender {
 
     protected boolean reset;
 
+    protected String queue = "send";
+
     public void setUp(String []args) throws IOException {
         if (args.length == 1) {
             this.url= args[0];
@@ -19,6 +21,8 @@ public abstract class AbstractSender {
             this.interval = 10;
             this.id = "1";
             this.reset = false;
+
+            start(queue + id);
         } else if (args.length == 2) {
             String fileName = args[1];
             String content = readEntireFile(fileName);
@@ -27,6 +31,7 @@ public abstract class AbstractSender {
             this.interval = 10;
             this.id = "1";
             this.reset = false;
+            start(queue + id);
         } else if (args.length == 3) {
             String fileName = args[1];
             String content = readEntireFile(fileName);
@@ -36,23 +41,25 @@ public abstract class AbstractSender {
             this.interval = time;
             this.id = "1";
             this.reset = false;
+
+            start(queue + id);
         } else if (args.length == 4) {
             String fileName = args[1];
             String content = readEntireFile(fileName);
             int time = Integer.parseInt(args[2]);
+            this.url= args[0];
+            this.content = content;
+            this.interval = time;
+            this.reset = false;
             for (int i = 0; i < Integer.parseInt(args[3]); i++) {
-                ActiveMQSend.HelloWorldProducer producer = new ActiveMQSend.HelloWorldProducer(args[0], content, time, "" + i, false);
-                producerList.add(producer);
-                thread(producer, false);
+                start(queue + i);
             }
         } else if (args.length == 5) {
             String fileName = args[1];
             String content = readEntireFile(fileName);
             int time = Integer.parseInt(args[2]);
             for (int i = 0; i < Integer.parseInt(args[3]); i++) {
-                AbstractSender producer = new HelloWorldProducer(args[0], content, time, "" + i, true);
-                producerList.add(producer);
-                thread(producer, false);
+                start(queue + i);
             }
         }
     }
@@ -68,4 +75,6 @@ public abstract class AbstractSender {
         } while (read >= 0);
         return contents.toString();
     }
+
+    public abstract void start(String id);
 }
